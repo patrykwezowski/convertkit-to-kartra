@@ -60,7 +60,7 @@ export default async function handler(req, res) {
       },
       actions: {
         assign_tag: "member",
-        subscribe_to_membership: "YOUR_MEMBERSHIP_ID",
+        subscribe_to_membership: "12",
       },
     };
 

@@ -1,77 +1,107 @@
+import fs from "fs";
+import path from "path";
+
+const LOG_FILE = "/tmp/webhook.log";
+
+function writeLog(message, data = null) {
+  const timestamp = new Date().toISOString();
+
+  const logEntry = `
+[${timestamp}]
+${message}
+${data ? JSON.stringify(data, null, 2) : ""}
+-----------------------------------
+`;
+
+  fs.appendFileSync(LOG_FILE, logEntry);
+}
+
 export default async function handler(req, res) {
-    // Only allow POST requests
-    if (req.method !== "POST") {
-      return res.status(405).json({
+  // Only allow POST
+  if (req.method !== "POST") {
+    writeLog("Invalid request method", {
+      method: req.method,
+    });
+
+    return res.status(405).json({
+      success: false,
+      message: "Method Not Allowed",
+    });
+  }
+
+  try {
+    writeLog("Webhook received", req.body);
+
+    // Support multiple Kit payload formats
+    const email =
+      req.body.email ||
+      req.body.subscriber?.email_address;
+
+    const first_name =
+      req.body.first_name ||
+      req.body.subscriber?.first_name ||
+      "";
+
+    if (!email) {
+      writeLog("Missing email", req.body);
+
+      return res.status(400).json({
         success: false,
-        message: "Method Not Allowed",
+        message: "Email is required",
       });
     }
-  
-    try {
-      const { email, first_name, fields = {}, tags = [] } = req.body;
-  
-      // Validate required fields
-      if (!email) {
-        return res.status(400).json({
-          success: false,
-          message: "Email is required",
-        });
-      }
-  
-      // Prepare Kartra payload
-      const kartraPayload = {
-        api_key: process.env.KARTRA_API_KEY,
-        api_password: process.env.KARTRA_API_PASSWORD,
-        lead: {
-          email,
-          first_name: first_name || "",
-        },
-        actions: {
-          assign_tag: "member",
-          subscribe_to_membership: "12",
-        },
-      };
-  
-      console.log("Sending lead to Kartra:", {
+
+    const kartraPayload = {
+      api_key: process.env.KARTRA_API_KEY,
+      api_password: process.env.KARTRA_API_PASSWORD,
+      lead: {
         email,
         first_name,
-      });
-  
-      // Send request to Kartra
-      const kartraResponse = await fetch("https://app.kartra.com/api", {
+      },
+      actions: {
+        assign_tag: "member",
+        subscribe_to_membership: "YOUR_MEMBERSHIP_ID",
+      },
+    };
+
+    writeLog("Sending to Kartra", kartraPayload);
+
+    const kartraResponse = await fetch(
+      "https://app.kartra.com/api",
+      {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(kartraPayload),
-      });
-  
-      const kartraData = await kartraResponse.json();
-  
-      // Handle Kartra API errors
-      if (!kartraResponse.ok) {
-        console.error("Kartra API Error:", kartraData);
-  
-        return res.status(500).json({
-          success: false,
-          message: "Failed to send data to Kartra",
-          error: kartraData,
-        });
       }
-  
-      console.log("Kartra Success:", kartraData);
-  
-      return res.status(200).json({
-        success: true,
-        message: "Lead processed successfully",
-      });
-    } catch (error) {
-      console.error("Webhook Error:", error);
-  
+    );
+
+    const kartraData = await kartraResponse.json();
+
+    writeLog("Kartra response", kartraData);
+
+    if (!kartraResponse.ok) {
+      writeLog("Kartra API error", kartraData);
+
       return res.status(500).json({
         success: false,
-        message: "Internal Server Error",
-        error: error.message,
+        message: "Kartra API failed",
       });
     }
+
+    return res.status(200).json({
+      success: true,
+    });
+  } catch (error) {
+    writeLog("Webhook exception", {
+      message: error.message,
+      stack: error.stack,
+    });
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
   }
+}

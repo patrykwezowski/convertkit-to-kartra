@@ -46,11 +46,10 @@ export default async function handler(req, res) {
       const params = new URLSearchParams();
   
       // Authentication
-      params.append(
-        "api_key",
-        process.env.KARTRA_API_KEY
-      );
-  
+      params.append("app_id", process.env.KARTRA_APP_ID);
+
+      params.append("api_key", process.env.KARTRA_API_KEY);
+      
       params.append(
         "api_password",
         process.env.KARTRA_API_PASSWORD

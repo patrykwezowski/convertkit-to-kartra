@@ -1,7 +1,10 @@
 // /api/convertkit-webhook.js
 
 export default async function handler(req, res) {
-    // Only allow POST requests
+    // -----------------------------------
+    // ONLY ALLOW POST
+    // -----------------------------------
+  
     if (req.method !== "POST") {
       return res.status(405).json({
         success: false,
@@ -10,12 +13,18 @@ export default async function handler(req, res) {
     }
   
     try {
-      // Debug object
+      // -----------------------------------
+      // DEBUG OBJECT
+      // -----------------------------------
+  
       const debug = {
         receivedBody: req.body,
       };
   
-      // Support multiple Kit payload formats
+      // -----------------------------------
+      // SUPPORT MULTIPLE KIT PAYLOADS
+      // -----------------------------------
+  
       const email =
         req.body.email ||
         req.body.subscriber?.email_address;
@@ -30,7 +39,10 @@ export default async function handler(req, res) {
         first_name,
       };
   
-      // Validate email
+      // -----------------------------------
+      // VALIDATE EMAIL
+      // -----------------------------------
+  
       if (!email) {
         return res.status(400).json({
           success: false,
@@ -39,93 +51,166 @@ export default async function handler(req, res) {
         });
       }
   
-      // -----------------------------------
-      // KARTRA PAYLOAD
-      // -----------------------------------
+      // ===================================
+      // STEP 1 — CREATE LEAD
+      // ===================================
   
-      const params = new URLSearchParams();
+      const createLeadParams =
+        new URLSearchParams();
   
-      // Authentication
-      params.append(
+      createLeadParams.append(
         "app_id",
         process.env.KARTRA_APP_ID
       );
-      
-      params.append(
+  
+      createLeadParams.append(
         "api_key",
         process.env.KARTRA_API_KEY
       );
-      
-      params.append(
+  
+      createLeadParams.append(
         "api_password",
         process.env.KARTRA_API_PASSWORD
       );
   
-      // Lead data
-      params.append("lead[email]", email);
+      createLeadParams.append(
+        "actions[0][cmd]",
+        "create_lead"
+      );
   
-      params.append(
-        "lead[first_name]",
+      createLeadParams.append(
+        "actions[0][email]",
+        email
+      );
+  
+      createLeadParams.append(
+        "actions[0][first_name]",
         first_name
       );
   
-      // Action 1 → Assign tag
-      params.append(
+      debug.createLeadPayload =
+        Object.fromEntries(
+          createLeadParams.entries()
+        );
+  
+      const createLeadResponse =
+        await fetch(
+          "https://app.kartra.com/api",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/x-www-form-urlencoded",
+            },
+            body: createLeadParams.toString(),
+          }
+        );
+  
+      let createLeadData;
+  
+      try {
+        createLeadData =
+          await createLeadResponse.json();
+      } catch {
+        createLeadData =
+          await createLeadResponse.text();
+      }
+  
+      debug.createLeadResponse =
+        createLeadData;
+  
+      // ===================================
+      // STEP 2 — ASSIGN TAG + MEMBERSHIP
+      // ===================================
+  
+      const actionParams =
+        new URLSearchParams();
+  
+      actionParams.append(
+        "app_id",
+        process.env.KARTRA_APP_ID
+      );
+  
+      actionParams.append(
+        "api_key",
+        process.env.KARTRA_API_KEY
+      );
+  
+      actionParams.append(
+        "api_password",
+        process.env.KARTRA_API_PASSWORD
+      );
+  
+      actionParams.append(
+        "lead[email]",
+        email
+      );
+  
+      // -----------------------------------
+      // ASSIGN TAG
+      // -----------------------------------
+  
+      actionParams.append(
         "actions[0][cmd]",
         "assign_tag"
       );
   
-      params.append(
+      actionParams.append(
         "actions[0][tag_name]",
         "member"
       );
   
-      // Action 2 → Subscribe to membership
-      params.append(
+      // -----------------------------------
+      // SUBSCRIBE TO MEMBERSHIP
+      // -----------------------------------
+  
+      actionParams.append(
         "actions[1][cmd]",
         "subscribe_to_membership"
       );
   
-      params.append(
+      actionParams.append(
         "actions[1][membership_id]",
         "12"
       );
   
-      debug.kartraPayload = Object.fromEntries(
-        params.entries()
-      );
+      debug.actionPayload =
+        Object.fromEntries(
+          actionParams.entries()
+        );
   
-      // -----------------------------------
-      // SEND TO KARTRA
-      // -----------------------------------
+      const kartraResponse =
+        await fetch(
+          "https://app.kartra.com/api",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/x-www-form-urlencoded",
+            },
+            body: actionParams.toString(),
+          }
+        );
   
-      const kartraResponse = await fetch(
-        "https://app.kartra.com/api",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/x-www-form-urlencoded",
-          },
-          body: params.toString(),
-        }
-      );
-  
-      // Kartra sometimes returns text instead of JSON
       let kartraData;
   
       try {
-        kartraData = await kartraResponse.json();
+        kartraData =
+          await kartraResponse.json();
       } catch {
-        kartraData = await kartraResponse.text();
+        kartraData =
+          await kartraResponse.text();
       }
   
-      debug.kartraResponse = kartraData;
-      debug.kartraStatus = kartraResponse.status;
+      debug.kartraResponse =
+        kartraData;
   
-      // -----------------------------------
-      // RETURN RESPONSE
-      // -----------------------------------
+      debug.kartraStatus =
+        kartraResponse.status;
+  
+      // ===================================
+      // SUCCESS RESPONSE
+      // ===================================
   
       return res.status(200).json({
         success: true,
@@ -135,7 +220,8 @@ export default async function handler(req, res) {
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: "Internal Server Error",
+        message:
+          "Internal Server Error",
         error: error.message,
         stack: error.stack,
       });

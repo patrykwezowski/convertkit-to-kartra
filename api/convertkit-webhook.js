@@ -121,94 +121,84 @@ createLeadData =
 debug.createLeadResponse =
 createLeadData;
   
-      // ===================================
-      // STEP 2 — ASSIGN TAG + MEMBERSHIP
-      // ===================================
   
-      const actionParams =
-        new URLSearchParams();
-  
-      actionParams.append(
-        "app_id",
-        process.env.KARTRA_APP_ID
-      );
-  
-      actionParams.append(
-        "api_key",
-        process.env.KARTRA_API_KEY
-      );
-  
-      actionParams.append(
-        "api_password",
-        process.env.KARTRA_API_PASSWORD
-      );
-  
-      actionParams.append(
-        "lead[email]",
-        email
-      );
-  
-      // -----------------------------------
-      // ASSIGN TAG
-      // -----------------------------------
-  
-      actionParams.append(
-        "actions[0][cmd]",
-        "assign_tag"
-      );
-  
-      actionParams.append(
-        "actions[0][tag_name]",
-        "member"
-      );
-  
-      // -----------------------------------
-      // SUBSCRIBE TO MEMBERSHIP
-      // -----------------------------------
-  
-      actionParams.append(
-        "actions[1][cmd]",
-        "subscribe_to_membership"
-      );
-  
-      actionParams.append(
-        "actions[1][membership_id]",
-        "12"
-      );
-  
-      debug.actionPayload =
-        Object.fromEntries(
-          actionParams.entries()
-        );
-  
-      const kartraResponse =
-        await fetch(
-          "https://app.kartra.com/api",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type":
-                "application/x-www-form-urlencoded",
-            },
-            body: actionParams.toString(),
-          }
-        );
-  
-      let kartraData;
-  
-      try {
-        kartraData =
-          await kartraResponse.json();
-      } catch {
-        kartraData =
-          await kartraResponse.text();
-      }
-  
-      debug.kartraResponse =
-        kartraData;
-  
-      debug.kartraStatus =
-        kartraResponse.status;
+   // ===================================
+// STEP 2 — SUBSCRIBE TO LIST
+// ===================================
+
+const actionParams =
+new URLSearchParams();
+
+actionParams.append(
+"app_id",
+process.env.KARTRA_APP_ID
+);
+
+actionParams.append(
+"api_key",
+process.env.KARTRA_API_KEY
+);
+
+actionParams.append(
+"api_password",
+process.env.KARTRA_API_PASSWORD
+);
+
+// Existing lead
+actionParams.append(
+"lead[email]",
+email
+);
+
+actionParams.append(
+"lead[first_name]",
+first_name
+);
+
+// Subscribe to list
+actionParams.append(
+"actions[0][cmd]",
+"subscribe_to_list"
+);
+
+actionParams.append(
+"actions[0][list_name]",
+"Neo Ross for Breakthrough movie"
+);
+
+debug.actionPayload =
+Object.fromEntries(
+  actionParams.entries()
+);
+
+const kartraResponse =
+await fetch(
+  "https://app.kartra.com/api",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type":
+        "application/x-www-form-urlencoded",
+    },
+    body: actionParams.toString(),
+  }
+);
+
+let kartraData;
+
+try {
+kartraData =
+  await kartraResponse.json();
+} catch {
+kartraData =
+  await kartraResponse.text();
+}
+
+debug.kartraResponse =
+kartraData;
+
+debug.kartraStatus =
+kartraResponse.status;
   
       // ===================================
       // SUCCESS RESPONSE

@@ -1,10 +1,8 @@
 // /api/convertkit-webhook.js
 
 export default async function handler(req, res) {
-    // -----------------------------------
+
     // ONLY ALLOW POST
-    // -----------------------------------
-  
     if (req.method !== "POST") {
       return res.status(405).json({
         success: false,
@@ -13,18 +11,12 @@ export default async function handler(req, res) {
     }
   
     try {
-      // -----------------------------------
-      // DEBUG OBJECT
-      // -----------------------------------
   
       const debug = {
         receivedBody: req.body,
       };
   
-      // -----------------------------------
-      // SUPPORT MULTIPLE KIT PAYLOADS
-      // -----------------------------------
-  
+      // SUPPORT KIT PAYLOADS
       const email =
         req.body.email ||
         req.body.subscriber?.email_address;
@@ -39,10 +31,7 @@ export default async function handler(req, res) {
         first_name,
       };
   
-      // -----------------------------------
       // VALIDATE EMAIL
-      // -----------------------------------
-  
       if (!email) {
         return res.status(400).json({
           success: false,
@@ -51,205 +40,105 @@ export default async function handler(req, res) {
         });
       }
   
- // ===================================
-// STEP 1 — CREATE / UPDATE LEAD
-// ===================================
-
-const createLeadParams =
-new URLSearchParams();
-
-createLeadParams.append(
-"app_id",
-process.env.KARTRA_APP_ID
-);
-
-createLeadParams.append(
-"api_key",
-process.env.KARTRA_API_KEY
-);
-
-createLeadParams.append(
-"api_password",
-process.env.KARTRA_API_PASSWORD
-);
-
-// Lead MUST be array/object structure
-createLeadParams.append(
-"lead[email]",
-email
-);
-
-createLeadParams.append(
-"lead[first_name]",
-first_name
-);
-
-// Create lead command
-createLeadParams.append(
-"actions[0][cmd]",
-"create_lead"
-);
-
-debug.createLeadPayload =
-Object.fromEntries(
-  createLeadParams.entries()
-);
-
-const createLeadResponse =
-await fetch(
-  "https://app.kartra.com/api",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type":
-        "application/x-www-form-urlencoded",
-    },
-    body: createLeadParams.toString(),
-  }
-);
-
-let createLeadData;
-
-try {
-createLeadData =
-  await createLeadResponse.json();
-} catch {
-createLeadData =
-  await createLeadResponse.text();
-}
-
-debug.createLeadResponse =
-createLeadData;
-  
-  
-   // ===================================
-// STEP 2 — SUBSCRIBE TO LIST
-// ===================================
-
-// const actionParams =
-// new URLSearchParams();
-
-// actionParams.append(
-// "app_id",
-// process.env.KARTRA_APP_ID
-// );
-
-// actionParams.append(
-// "api_key",
-// process.env.KARTRA_API_KEY
-// );
-
-// actionParams.append(
-// "api_password",
-// process.env.KARTRA_API_PASSWORD
-// );
-
-// // Existing lead
-// actionParams.append(
-// "lead[email]",
-// email
-// );
-
-// actionParams.append(
-// "lead[first_name]",
-// first_name
-// );
-
-// // Subscribe to list
-// actionParams.append(
-// "actions[0][cmd]",
-// "subscribe_to_list"
-// );
-
-// actionParams.append(
-// "actions[0][list_name]",
-// "Neo Ross for Breakthrough movie"
-// );
-
-// debug.actionPayload =
-// Object.fromEntries(
-//   actionParams.entries()
-// );
-
-// const kartraResponse =
-// await fetch(
-//   "https://app.kartra.com/api",
-//   {
-//     method: "POST",
-//     headers: {
-//       "Content-Type":
-//         "application/x-www-form-urlencoded",
-//     },
-//     body: actionParams.toString(),
-//   }
-// );
-
-// let kartraData;
-
-// try {
-// kartraData =
-//   await kartraResponse.json();
-// } catch {
-// kartraData =
-//   await kartraResponse.text();
-// }
-
-// debug.kartraResponse =
-// kartraData;
-
-// debug.kartraStatus =
-// kartraResponse.status;
-
-const actionParams =
-  new URLSearchParams();
-
-actionParams.append(
-  "app_id",
-  process.env.KARTRA_APP_ID
-);
-
-actionParams.append(
-  "api_key",
-  process.env.KARTRA_API_KEY
-);
-
-actionParams.append(
-  "api_password",
-  process.env.KARTRA_API_PASSWORD
-);
-
-actionParams.append(
-  "lead[email]",
-  email
-);
-
-// ASSIGN TEST TAG
-actionParams.append(
-  "actions[0][cmd]",
-  "assign_tag"
-);
-
-actionParams.append(
-  "actions[0][tag_name]",
-  "breakthrough-movie-neo-ross-en-3-days"
-);
-  
       // ===================================
-      // SUCCESS RESPONSE
+      // SINGLE KARTRA REQUEST
       // ===================================
   
+      const params =
+        new URLSearchParams();
+  
+      // AUTH
+      params.append(
+        "app_id",
+        process.env.KARTRA_APP_ID
+      );
+  
+      params.append(
+        "api_key",
+        process.env.KARTRA_API_KEY
+      );
+  
+      params.append(
+        "api_password",
+        process.env.KARTRA_API_PASSWORD
+      );
+  
+      // LEAD DATA
+      params.append(
+        "lead[email]",
+        email
+      );
+  
+      params.append(
+        "lead[first_name]",
+        first_name
+      );
+  
+      // ACTION 1 — CREATE LEAD
+      params.append(
+        "actions[0][cmd]",
+        "create_lead"
+      );
+  
+      // ACTION 2 — ASSIGN TAG
+      params.append(
+        "actions[1][cmd]",
+        "assign_tag"
+      );
+  
+      params.append(
+        "actions[1][tag_name]",
+        "breakthrough-test"
+      );
+  
+      debug.payload =
+        Object.fromEntries(
+          params.entries()
+        );
+  
+      // SEND REQUEST
+      const kartraResponse =
+        await fetch(
+          "https://app.kartra.com/api",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/x-www-form-urlencoded",
+            },
+            body: params.toString(),
+          }
+        );
+  
+      let kartraData;
+  
+      try {
+        kartraData =
+          await kartraResponse.json();
+      } catch {
+        kartraData =
+          await kartraResponse.text();
+      }
+  
+      debug.kartraResponse =
+        kartraData;
+  
+      debug.kartraStatus =
+        kartraResponse.status;
+  
+      // SUCCESS
       return res.status(200).json({
         success: true,
         debug,
       });
   
     } catch (error) {
+  
       return res.status(500).json({
         success: false,
-        message:
-          "Internal Server Error",
         error: error.message,
         stack: error.stack,
       });
+  
     }
   }

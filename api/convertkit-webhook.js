@@ -88,7 +88,7 @@ export default async function handler(req, res) {
   
       params.append(
         "actions[1][tag_name]",
-        "Breakthrough Movie Neo Ross EN 3 Days"
+        "Breaketrough move manual API automation"
       );
   
       debug.payload =

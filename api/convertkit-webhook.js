@@ -126,79 +126,113 @@ createLeadData;
 // STEP 2 — SUBSCRIBE TO LIST
 // ===================================
 
+// const actionParams =
+// new URLSearchParams();
+
+// actionParams.append(
+// "app_id",
+// process.env.KARTRA_APP_ID
+// );
+
+// actionParams.append(
+// "api_key",
+// process.env.KARTRA_API_KEY
+// );
+
+// actionParams.append(
+// "api_password",
+// process.env.KARTRA_API_PASSWORD
+// );
+
+// // Existing lead
+// actionParams.append(
+// "lead[email]",
+// email
+// );
+
+// actionParams.append(
+// "lead[first_name]",
+// first_name
+// );
+
+// // Subscribe to list
+// actionParams.append(
+// "actions[0][cmd]",
+// "subscribe_to_list"
+// );
+
+// actionParams.append(
+// "actions[0][list_name]",
+// "Neo Ross for Breakthrough movie"
+// );
+
+// debug.actionPayload =
+// Object.fromEntries(
+//   actionParams.entries()
+// );
+
+// const kartraResponse =
+// await fetch(
+//   "https://app.kartra.com/api",
+//   {
+//     method: "POST",
+//     headers: {
+//       "Content-Type":
+//         "application/x-www-form-urlencoded",
+//     },
+//     body: actionParams.toString(),
+//   }
+// );
+
+// let kartraData;
+
+// try {
+// kartraData =
+//   await kartraResponse.json();
+// } catch {
+// kartraData =
+//   await kartraResponse.text();
+// }
+
+// debug.kartraResponse =
+// kartraData;
+
+// debug.kartraStatus =
+// kartraResponse.status;
+
 const actionParams =
-new URLSearchParams();
+  new URLSearchParams();
 
 actionParams.append(
-"app_id",
-process.env.KARTRA_APP_ID
-);
-
-actionParams.append(
-"api_key",
-process.env.KARTRA_API_KEY
+  "app_id",
+  process.env.KARTRA_APP_ID
 );
 
 actionParams.append(
-"api_password",
-process.env.KARTRA_API_PASSWORD
-);
-
-// Existing lead
-actionParams.append(
-"lead[email]",
-email
+  "api_key",
+  process.env.KARTRA_API_KEY
 );
 
 actionParams.append(
-"lead[first_name]",
-first_name
-);
-
-// Subscribe to list
-actionParams.append(
-"actions[0][cmd]",
-"subscribe_to_list"
+  "api_password",
+  process.env.KARTRA_API_PASSWORD
 );
 
 actionParams.append(
-"actions[0][list_name]",
-"Neo Ross for Breakthrough movie"
+  "lead[email]",
+  email
 );
 
-debug.actionPayload =
-Object.fromEntries(
-  actionParams.entries()
+// ASSIGN TEST TAG
+actionParams.append(
+  "actions[0][cmd]",
+  "assign_tag"
 );
 
-const kartraResponse =
-await fetch(
-  "https://app.kartra.com/api",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type":
-        "application/x-www-form-urlencoded",
-    },
-    body: actionParams.toString(),
-  }
+actionParams.append(
+  "actions[0][tag_name]",
+  "breakthrough-movie-neo-ross-en-3-days"
 );
-
-let kartraData;
-
-try {
-kartraData =
-  await kartraResponse.json();
-} catch {
-kartraData =
-  await kartraResponse.text();
-}
-
-debug.kartraResponse =
-kartraData;
-
-debug.kartraStatus =
-kartraResponse.status;
   
       // ===================================
       // SUCCESS RESPONSE

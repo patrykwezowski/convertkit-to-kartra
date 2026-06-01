@@ -1,11 +1,35 @@
 // /api/convertkit-webhook.js
 
-export default async function handler(req, res) {
-
-    console.log("HEADERS:", req.headers);
-    console.log("BODY:", req.body);
-
-    // ONLY ALLOW POST
+export const config = {
+    api: {
+      bodyParser: false,
+    },
+  };
+  
+  async function getRawBody(req) {
+    return new Promise((resolve, reject) => {
+      let data = "";
+  
+      req.on("data", chunk => {
+        data += chunk;
+      });
+  
+      req.on("end", () => {
+        resolve(data);
+      });
+  
+      req.on("error", err => {
+        reject(err);
+      });
+    });
+  }
+  
+  export default async function handler(req, res) {
+  
+    // ===================================
+    // ALLOW ONLY POST
+    // ===================================
+  
     if (req.method !== "POST") {
       return res.status(405).json({
         success: false,
@@ -15,103 +39,98 @@ export default async function handler(req, res) {
   
     try {
   
-      const debug = {
-        receivedBody: req.body,
-      };
-  
-     // ===================================
-    // SUPPORT ALL KIT PAYLOAD FORMATS
-    // ===================================
-
-    const email =
-    req.body.email ||
-    req.body.email_address ||
-    req.body.subscriber?.email_address ||
-    req.body.subscriber?.email;
-
-    const first_name =
-    req.body.first_name ||
-    req.body.subscriber?.first_name ||
-    "";
-  
-      debug.parsedData = {
-        email,
-        first_name,
-      };
-      if (!email) {
-        return res.status(400).json({
-          success: false,
-          message: "No email found",
-          receivedBody: req.body,
-        });
-      }
-  
-      // VALIDATE EMAIL
-      if (!email) {
-        return res.status(400).json({
-          success: false,
-          message: "Email is required",
-          debug,
-        });
-      }
-  
       // ===================================
-      // SINGLE KARTRA REQUEST
+      // GET RAW BODY
       // ===================================
   
+      const rawBody = await getRawBody(req);
+  
+      console.log("RAW BODY:", rawBody);
+  
+      // Parse form-urlencoded
       const params =
+        new URLSearchParams(rawBody);
+  
+      const body =
+        Object.fromEntries(params.entries());
+  
+      console.log("PARSED BODY:", body);
+  
+      // ===================================
+      // EXTRACT DATA
+      // ===================================
+  
+      const email =
+        body.email ||
+        body.email_address;
+  
+      const first_name =
+        body.first_name || "";
+  
+      // ===================================
+      // VALIDATE
+      // ===================================
+  
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: "Email missing",
+          body,
+        });
+      }
+  
+      // ===================================
+      // KARTRA REQUEST
+      // ===================================
+  
+      const kartraParams =
         new URLSearchParams();
   
       // AUTH
-      params.append(
+      kartraParams.append(
         "app_id",
         process.env.KARTRA_APP_ID
       );
   
-      params.append(
+      kartraParams.append(
         "api_key",
         process.env.KARTRA_API_KEY
       );
   
-      params.append(
+      kartraParams.append(
         "api_password",
         process.env.KARTRA_API_PASSWORD
       );
   
-      // LEAD DATA
-      params.append(
+      // LEAD
+      kartraParams.append(
         "lead[email]",
         email
       );
   
-      params.append(
+      kartraParams.append(
         "lead[first_name]",
         first_name
       );
   
-      // ACTION 1 — CREATE LEAD
-      params.append(
+      // ACTION 1
+      kartraParams.append(
         "actions[0][cmd]",
         "create_lead"
       );
   
-      // ACTION 2 — ASSIGN TAG
-      params.append(
+      // ACTION 2
+      kartraParams.append(
         "actions[1][cmd]",
         "assign_tag"
       );
   
-      params.append(
+      kartraParams.append(
         "actions[1][tag_name]",
-        "Breaketrough move manual API automation"
+        "Breakthrough Movie Neo Ross EN 3 Days"
       );
   
-      debug.payload =
-        Object.fromEntries(
-          params.entries()
-        );
-  
-      // SEND REQUEST
+      // SEND TO KARTRA
       const kartraResponse =
         await fetch(
           "https://app.kartra.com/api",
@@ -121,38 +140,31 @@ export default async function handler(req, res) {
               "Content-Type":
                 "application/x-www-form-urlencoded",
             },
-            body: params.toString(),
+            body: kartraParams.toString(),
           }
         );
   
-      let kartraData;
+      const kartraData =
+        await kartraResponse.json();
   
-      try {
-        kartraData =
-          await kartraResponse.json();
-      } catch {
-        kartraData =
-          await kartraResponse.text();
-      }
+      console.log(
+        "KARTRA RESPONSE:",
+        kartraData
+      );
   
-      debug.kartraResponse =
-        kartraData;
-  
-      debug.kartraStatus =
-        kartraResponse.status;
-  
-      // SUCCESS
       return res.status(200).json({
         success: true,
-        debug,
+        body,
+        kartraData,
       });
   
     } catch (error) {
   
+      console.error(error);
+  
       return res.status(500).json({
         success: false,
         error: error.message,
-        stack: error.stack,
       });
   
     }

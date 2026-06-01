@@ -128,7 +128,7 @@ const first_name =
   
       kartraParams.append(
         "actions[1][tag_name]",
-        "Breakthrough Movie Neo Ross EN 3 Days"
+        "Breaketrough move manual API automation"
       );
   
       // SEND TO KARTRA

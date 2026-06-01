@@ -47,12 +47,7 @@ export const config = {
   
       console.log("RAW BODY:", rawBody);
   
-      // Parse form-urlencoded
-      const params =
-        new URLSearchParams(rawBody);
-  
-      const body =
-        Object.fromEntries(params.entries());
+      const body = JSON.parse(rawBody);
   
       console.log("PARSED BODY:", body);
   

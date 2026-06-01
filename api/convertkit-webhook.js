@@ -59,8 +59,12 @@ export const config = {
 // EXTRACT KIT DATA
 // ===================================
 
+// ===================================
+// EXTRACT KIT DATA
+// ===================================
+
 const subscriber =
-  req.body?.subscribers?.[0];
+  body?.subscribers?.[0];
 
 const email =
   subscriber?.email;
@@ -128,7 +132,7 @@ const first_name =
   
       kartraParams.append(
         "actions[1][tag_name]",
-        "Breakthrough Movie Neo Ross EN 3 Days"
+        "Breaketrough move manual API automation"
       );
   
       // SEND TO KARTRA

@@ -60,12 +60,18 @@ export const config = {
       // EXTRACT DATA
       // ===================================
   
-      const email =
-        body.email ||
-        body.email_address;
-  
-      const first_name =
-        body.first_name || "";
+// ===================================
+// EXTRACT KIT DATA
+// ===================================
+
+const subscriber =
+  req.body?.subscribers?.[0];
+
+const email =
+  subscriber?.email;
+
+const first_name =
+  subscriber?.first_name || "";
   
       // ===================================
       // VALIDATE

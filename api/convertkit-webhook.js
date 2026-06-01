@@ -2,6 +2,9 @@
 
 export default async function handler(req, res) {
 
+    console.log("HEADERS:", req.headers);
+    console.log("BODY:", req.body);
+
     // ONLY ALLOW POST
     if (req.method !== "POST") {
       return res.status(405).json({
@@ -16,20 +19,32 @@ export default async function handler(req, res) {
         receivedBody: req.body,
       };
   
-      // SUPPORT KIT PAYLOADS
-      const email =
-        req.body.email ||
-        req.body.subscriber?.email_address;
-  
-      const first_name =
-        req.body.first_name ||
-        req.body.subscriber?.first_name ||
-        "";
+     // ===================================
+    // SUPPORT ALL KIT PAYLOAD FORMATS
+    // ===================================
+
+    const email =
+    req.body.email ||
+    req.body.email_address ||
+    req.body.subscriber?.email_address ||
+    req.body.subscriber?.email;
+
+    const first_name =
+    req.body.first_name ||
+    req.body.subscriber?.first_name ||
+    "";
   
       debug.parsedData = {
         email,
         first_name,
       };
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: "No email found",
+          receivedBody: req.body,
+        });
+      }
   
       // VALIDATE EMAIL
       if (!email) {

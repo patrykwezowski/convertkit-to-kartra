@@ -10,7 +10,7 @@ export const config = {
     return new Promise((resolve, reject) => {
       let data = "";
   
-      req.on("data", chunk => {
+      req.on("data", (chunk) => {
         data += chunk;
       });
   
@@ -18,18 +18,13 @@ export const config = {
         resolve(data);
       });
   
-      req.on("error", err => {
+      req.on("error", (err) => {
         reject(err);
       });
     });
   }
   
   export default async function handler(req, res) {
-  
-    // ===================================
-    // ALLOW ONLY POST
-    // ===================================
-  
     if (req.method !== "POST") {
       return res.status(405).json({
         success: false,
@@ -38,10 +33,9 @@ export const config = {
     }
   
     try {
-  
-      // ===================================
-      // GET RAW BODY
-      // ===================================
+      // ==========================
+      // PARSE KIT PAYLOAD
+      // ==========================
   
       const rawBody = await getRawBody(req);
   
@@ -51,22 +45,10 @@ export const config = {
   
       console.log("PARSED BODY:", body);
   
-// ===================================
-// EXTRACT KIT DATA
-// ===================================
-
-const subscriber =
-  body?.subscribers?.[0];
-
-const email =
-  subscriber?.email;
-
-const first_name =
-  subscriber?.first_name || "";
+      const subscriber = body?.subscribers?.[0];
   
-      // ===================================
-      // VALIDATE
-      // ===================================
+      const email = subscriber?.email;
+      const first_name = subscriber?.first_name || "";
   
       if (!email) {
         return res.status(400).json({
@@ -76,14 +58,12 @@ const first_name =
         });
       }
   
-      // ===================================
+      // ==========================
       // KARTRA REQUEST
-      // ===================================
+      // ==========================
   
-      const kartraParams =
-        new URLSearchParams();
+      const kartraParams = new URLSearchParams();
   
-      // AUTH
       kartraParams.append(
         "app_id",
         process.env.KARTRA_APP_ID
@@ -99,7 +79,6 @@ const first_name =
         process.env.KARTRA_API_PASSWORD
       );
   
-      // LEAD
       kartraParams.append(
         "lead[email]",
         email
@@ -110,13 +89,11 @@ const first_name =
         first_name
       );
   
-      // ACTION 1
       kartraParams.append(
         "actions[0][cmd]",
         "create_lead"
       );
   
-      // ACTION 2
       kartraParams.append(
         "actions[1][cmd]",
         "assign_tag"
@@ -127,37 +104,76 @@ const first_name =
         "Breakethrough movie LT subscribers"
       );
   
-      // SEND TO KARTRA
-      const kartraResponse =
-        await fetch(
-          "https://app.kartra.com/api",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type":
-                "application/x-www-form-urlencoded",
-            },
-            body: kartraParams.toString(),
-          }
-        );
+      const kartraResponse = await fetch(
+        "https://app.kartra.com/api",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/x-www-form-urlencoded",
+          },
+          body: kartraParams.toString(),
+        }
+      );
   
       const kartraData =
         await kartraResponse.json();
   
       console.log(
         "KARTRA RESPONSE:",
-        kartraData
+        JSON.stringify(kartraData, null, 2)
       );
+  
+      // ==========================
+      // GOOGLE SHEETS LOGGING
+      // ==========================
+  
+      try {
+        await fetch(
+          "https://script.google.com/macros/s/AKfycbwacWTtPUUjoD5vYSpajuWG6jcHWWknAIVxAQMUI4breAFsnnvGnyo4eNvERVjU7wYe/exec",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              timestamp:
+                new Date().toISOString(),
+  
+              email,
+              first_name,
+  
+              kartraStatus:
+                kartraData?.status || "",
+  
+              kartraResponse:
+                kartraData,
+  
+              subscriber,
+            }),
+          }
+        );
+      } catch (sheetError) {
+        console.error(
+          "Google Sheet logging failed:",
+          sheetError
+        );
+      }
   
       return res.status(200).json({
         success: true,
-        body,
+        email,
+        first_name,
         kartraData,
       });
   
     } catch (error) {
   
-      console.error(error);
+      console.error(
+        "WEBHOOK ERROR:",
+        error
+      );
   
       return res.status(500).json({
         success: false,
